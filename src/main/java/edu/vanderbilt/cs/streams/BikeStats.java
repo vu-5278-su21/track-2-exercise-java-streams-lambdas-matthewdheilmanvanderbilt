@@ -42,7 +42,17 @@ public class BikeStats {
      * @return
      */
     public Stream<BikeRide.DataFrame> averagedDataFrameStream(int windowSize){
-        return Stream.empty();
+    	List<BikeRide.DataFrame> dataFrames = ride.fusedFramesStream().collect(Collectors.toList());
+    	
+        return StreamUtils.slidingWindow(dataFrames, windowSize)
+                .map(frame ->
+                        new BikeRide.DataFrame(
+                                frame.get(0).coordinate,
+                                StreamUtils.averageOfProperty(BikeRide.DataFrame::getGrade).apply(frame),
+                                StreamUtils.averageOfProperty(BikeRide.DataFrame::getAltitude).apply(frame),
+                                StreamUtils.averageOfProperty(BikeRide.DataFrame::getVelocity).apply(frame),
+                                StreamUtils.averageOfProperty(BikeRide.DataFrame::getHeartRate).apply(frame))
+                        );
     }
 
     // @ToDo:
@@ -57,7 +67,11 @@ public class BikeStats {
     // the same.
     //
     public Stream<LatLng> locationsOfStops() {
-        return Stream.empty();
+        
+        return ride.fusedFramesStream()
+        		.filter(frame -> frame.getVelocity() == 0)
+                .map(frame->frame.coordinate)
+                .distinct();
     }
 
 }
